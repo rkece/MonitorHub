@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Lock, Mail, Shield, Activity, Server, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -8,7 +8,16 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Separator } from '../components/ui/separator';
 
 interface LoginPageProps {
-  onLogin: () => void;
+  onLogin: (email: string, name: string, avatar?: string) => void;
+}
+
+// Google OAuth Configuration
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
+
+declare global {
+  interface Window {
+    google: any;
+  }
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -17,6 +26,57 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+
+  // Load Google Sign-In script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      setGoogleLoaded(true);
+      initializeGoogleSignIn();
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const initializeGoogleSignIn = () => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCallback,
+      });
+    }
+  };
+
+  const handleGoogleCallback = (response: any) => {
+    try {
+      // Decode JWT token to get user info
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      
+      onLogin(
+        payload.email,
+        payload.name,
+        payload.picture
+      );
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+    }
+  };
+
+  const handleGoogleSignIn = () => {
+    if (window.google && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
+      // Use the One Tap prompt for real Google login
+      window.google.accounts.id.prompt();
+    } else {
+      alert('⚠️ Google Sign-In Not Configured\n\nTo use real Google Sign-In:\n\n1. Create OAuth credentials at:\nhttps://console.cloud.google.com/\n\n2. Copy .env.example to .env\n\n3. Add your Client ID to .env:\nVITE_GOOGLE_CLIENT_ID=your_id_here\n\n4. Restart the dev server\n\nSee QUICK_START.md for detailed instructions!\n\nFor now, use email/password login with any credentials.');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,16 +84,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     // Simulate login delay
     setTimeout(() => {
       setIsLoading(false);
-      onLogin();
-    }, 1500);
-  };
-
-  const handleGoogleSignIn = () => {
-    setIsLoading(true);
-    // Simulate Google sign-in delay
-    setTimeout(() => {
-      setIsLoading(false);
-      onLogin();
+      // Extract name from email (before @) and capitalize it
+      const namePart = email.split('@')[0];
+      const name = namePart.charAt(0).toUpperCase() + namePart.slice(1).replace(/[._-]/g, ' ');
+      onLogin(email, name);
     }, 1500);
   };
 
@@ -288,12 +342,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   <Separator className="flex-1 bg-white/20" />
                 </div>
 
-                {/* Google Sign-in */}
+                {/* Google Sign-in - Real OAuth */}
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     type="button"
                     onClick={handleGoogleSignIn}
-                    disabled={isLoading}
+                    disabled={isLoading || !googleLoaded}
                     className="w-full bg-white hover:bg-gray-100 text-slate-900 border-0 shadow-lg"
                   >
                     <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">

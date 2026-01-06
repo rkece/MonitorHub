@@ -1,18 +1,55 @@
 import { motion } from 'motion/react';
-import { Activity, AlertTriangle, Server, TrendingUp, ArrowUp, ArrowDown, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Activity, AlertTriangle, Server, TrendingUp, ArrowUp, ArrowDown, Clock, RefreshCw } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { kpiData, timeSeriesData, deviceStatusData, activityTimelineData } from '../utils/mockData';
+import { timeSeriesData, deviceStatusData } from '../utils/mockData';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { db } from '../utils/database';
+import { toast } from 'sonner';
 
 export function DashboardPage() {
+  const [devices, setDevices] = useState(db.getDevices());
+  const [alerts, setAlerts] = useState(db.getAlerts());
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+
+  const refreshData = () => {
+    setDevices(db.getDevices());
+    setAlerts(db.getAlerts());
+    setLastRefresh(new Date());
+    toast.success('Dashboard refreshed');
+  };
+
+  // Calculate KPIs from real data
+  const activeAlerts = alerts.filter(a => !a.resolvedAt).length;
+  const activeNodes = devices.filter(d => d.status === 'online').length;
+  const criticalAlerts = alerts.filter(a => a.severity === 'critical' && !a.resolvedAt).length;
+  const riskScore = Math.round((criticalAlerts / Math.max(alerts.length, 1)) * 100);
+
+  // Activity timeline data - generate from recent alerts and devices
+  const activityTimelineData = [
+    ...alerts.slice(0, 3).map(alert => ({
+      event: alert.title,
+      device: alert.deviceName || 'System',
+      time: new Date(alert.timestamp).toLocaleTimeString(),
+      type: alert.severity === 'critical' ? 'error' : alert.severity === 'warning' ? 'warning' : 'info'
+    })),
+    ...devices.slice(0, 2).map(device => ({
+      event: `Device ${device.status === 'online' ? 'connected' : device.status === 'offline' ? 'disconnected' : 'warning'}`,
+      device: device.name,
+      time: 'Recently',
+      type: device.status === 'online' ? 'success' : device.status === 'offline' ? 'error' : 'warning'
+    }))
+  ].slice(0, 5);
+
   const kpiCards = [
     {
       title: 'Active Alerts',
-      value: kpiData.activeAlerts,
-      change: '+12%',
-      trend: 'up',
+      value: activeAlerts,
+      change: `${criticalAlerts} critical`,
+      trend: criticalAlerts > 0 ? 'up' : 'down',
       icon: AlertTriangle,
       color: 'from-red-500 to-orange-500',
       bgColor: 'bg-red-500/10',
@@ -20,9 +57,9 @@ export function DashboardPage() {
     },
     {
       title: 'Active Nodes',
-      value: kpiData.activeNodes,
-      change: '+5%',
-      trend: 'up',
+      value: activeNodes,
+      change: `${devices.length} total`,
+      trend: activeNodes > devices.length / 2 ? 'up' : 'down',
       icon: Server,
       color: 'from-blue-500 to-cyan-500',
       bgColor: 'bg-blue-500/10',
@@ -30,9 +67,9 @@ export function DashboardPage() {
     },
     {
       title: 'Risk Score',
-      value: `${kpiData.riskScore}%`,
-      change: '-8%',
-      trend: 'down',
+      value: `${riskScore}%`,
+      change: riskScore > 50 ? 'High risk' : 'Low risk',
+      trend: riskScore > 50 ? 'up' : 'down',
       icon: TrendingUp,
       color: 'from-purple-500 to-pink-500',
       bgColor: 'bg-purple-500/10',
@@ -40,8 +77,8 @@ export function DashboardPage() {
     },
     {
       title: 'Total Events',
-      value: kpiData.totalEvents.toLocaleString(),
-      change: '+24%',
+      value: alerts.length,
+      change: `Updated ${lastRefresh.toLocaleTimeString()}`,
       trend: 'up',
       icon: Activity,
       color: 'from-green-500 to-emerald-500',
@@ -54,10 +91,21 @@ export function DashboardPage() {
     <div className="p-6 space-y-6">
       <Breadcrumbs currentPage="dashboard" />
       
-      {/* Page header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">Real-time infrastructure monitoring overview</p>
+      {/* Page header with refresh */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard Overview</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Real-time monitoring and system insights • Last updated: {lastRefresh.toLocaleTimeString()}
+          </p>
+        </div>
+        <Button 
+          onClick={refreshData} 
+          className="gap-2 bg-purple-500 hover:bg-purple-600"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh Dashboard
+        </Button>
       </div>
 
       {/* KPI Cards */}

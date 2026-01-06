@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Toaster } from './components/ui/sonner';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DevicesPage } from './pages/DevicesPage';
@@ -13,22 +14,46 @@ import { Navbar } from './components/Navbar';
  * MonitorHub - Enterprise Monitoring Dashboard
  * 
  * A fully-designed, professional monitoring dashboard with:
- * - Glassmorphism login page with gradient animations
+ * - Real Google OAuth authentication
  * - Real-time monitoring dashboard with KPI cards and charts
  * - Device monitoring with filters, search, and expandable rows
  * - Event alerts grouped by severity with timeline view
  * - Analytics with risk trends, heatmaps, and insights
  * - Settings page with dark/light mode and customization options
+ * - LocalStorage persistence with Supabase integration option
  * 
  * Built with React, Tailwind CSS, Shadcn UI, Motion (Framer Motion), and Recharts
- * Frontend-only with mock data (no backend required)
  */
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [darkMode, setDarkMode] = useState(false);
-  const [accentColor, setAccentColor] = useState('purple');
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [accentColor, setAccentColor] = useState(() => {
+    return localStorage.getItem('accentColor') || 'bg-purple-500';
+  });
+  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
+  const [userAvatar, setUserAvatar] = useState('');
+
+  // Load user session from localStorage
+  useEffect(() => {
+    const savedUser = localStorage.getItem('monitorhub_user');
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser);
+        setUserEmail(user.email);
+        setUserName(user.name);
+        setUserAvatar(user.avatar || '');
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Failed to load user session:', error);
+      }
+    }
+  }, []);
 
   // Apply dark mode to document
   useEffect(() => {
@@ -37,15 +62,38 @@ export default function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  const handleLogin = () => {
+  // Save accent color
+  useEffect(() => {
+    localStorage.setItem('accentColor', accentColor);
+  }, [accentColor]);
+
+  const handleLogin = (email: string, name: string, avatar?: string) => {
+    setUserEmail(email);
+    setUserName(name);
+    setUserAvatar(avatar || '');
     setIsAuthenticated(true);
+    
+    // Save to localStorage
+    localStorage.setItem('monitorhub_user', JSON.stringify({
+      email,
+      name,
+      avatar: avatar || '',
+      loginTime: new Date().toISOString()
+    }));
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     setCurrentPage('dashboard');
+    setUserEmail('');
+    setUserName('');
+    setUserAvatar('');
+    
+    // Clear localStorage
+    localStorage.removeItem('monitorhub_user');
   };
 
   const toggleDarkMode = () => {
@@ -81,13 +129,22 @@ export default function App() {
 
   return (
     <div className="h-screen flex overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <Toaster richColors position="top-right" />
+      
       {/* Sidebar */}
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top navbar */}
-        <Navbar onLogout={handleLogout} darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />
+        <Navbar 
+          onLogout={handleLogout} 
+          darkMode={darkMode} 
+          onToggleDarkMode={toggleDarkMode}
+          userEmail={userEmail}
+          userName={userName}
+          userAvatar={userAvatar}
+        />
 
         {/* Page content with animation */}
         <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950">

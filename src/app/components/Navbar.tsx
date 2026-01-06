@@ -17,9 +17,12 @@ interface NavbarProps {
   onLogout: () => void;
   darkMode: boolean;
   onToggleDarkMode: () => void;
+  userEmail: string;
+  userName: string;
+  userAvatar?: string;
 }
 
-export function Navbar({ onLogout, darkMode, onToggleDarkMode }: NavbarProps) {
+export function Navbar({ onLogout, darkMode, onToggleDarkMode, userEmail, userName, userAvatar }: NavbarProps) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   const notifications = [
@@ -119,12 +122,24 @@ export function Navbar({ onLogout, darkMode, onToggleDarkMode }: NavbarProps) {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
-              </div>
+              {userAvatar ? (
+                <img
+                  src={userAvatar}
+                  alt={userName}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+              )}
               <div className="text-left hidden md:block">
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Admin User</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">admin@monitorhub.com</p>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  {userName || 'User'}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {userEmail || 'user@monitorhub.com'}
+                </p>
               </div>
             </motion.button>
           </DropdownMenuTrigger>
