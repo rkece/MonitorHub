@@ -27,7 +27,8 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Breadcrumbs } from '../components/Breadcrumbs';
-import { db, type Alert } from '../utils/database';
+import { apiAlerts } from '../utils/apiAlerts';
+type Alert = any;
 import { toast } from 'sonner';
 
 export function AlertsPage() {
@@ -47,8 +48,9 @@ export function AlertsPage() {
   }, []);
 
   const loadAlerts = () => {
-    setAlerts(db.getAlerts());
-  };
+  apiAlerts.getAlerts().then(setAlerts);
+};
+
 
   const handleAddAlert = () => {
     if (!formData.title || !formData.message) {
@@ -56,13 +58,12 @@ export function AlertsPage() {
       return;
     }
 
-    db.addAlert({
-      ...formData,
-      timestamp: new Date().toISOString(),
-      acknowledged: false,
-    });
+    apiAlerts.addAlert({
+  ...formData,
+  timestamp: new Date().toISOString(),
+  acknowledged: false,
+}).then(loadAlerts);
 
-    setAlerts(db.getAlerts());
     setIsAddDialogOpen(false);
     setFormData({
       title: '',
@@ -74,20 +75,19 @@ export function AlertsPage() {
   };
 
   const handleAcknowledge = (alertId: string) => {
-    db.acknowledgeAlert(alertId);
-    setAlerts(db.getAlerts());
+    apiAlerts.acknowledgeAlert(alertId).then(loadAlerts);
+
   };
 
   const handleResolve = (alertId: string) => {
-    db.resolveAlert(alertId);
-    setAlerts(db.getAlerts());
+  apiAlerts.resolveAlert(alertId).then(loadAlerts);
+
   };
 
   const handleDelete = (alert: Alert) => {
     if (confirm(`Are you sure you want to delete this alert?`)) {
-      db.deleteAlert(alert.id);
-      setAlerts(db.getAlerts());
-      toast.success('Alert deleted');
+      apiAlerts.deleteAlert(alert.id).then(loadAlerts);
+toast.success('Alert deleted');
     }
   };
 
