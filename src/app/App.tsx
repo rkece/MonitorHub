@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster } from './components/ui/sonner';
+import { toast } from 'sonner';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DevicesPage } from './pages/DevicesPage';
@@ -70,20 +71,42 @@ export default function App() {
     localStorage.setItem('accentColor', accentColor);
   }, [accentColor]);
 
-  const handleLogin = (email: string, name: string, avatar?: string) => {
+  const handleLogin = async (email: string, name: string, avatar?: string) => {
     setUserEmail(email);
     setUserName(name);
     setUserAvatar(avatar || '');
     setIsAuthenticated(true);
-    
+
     // Save to localStorage
-    localStorage.setItem('monitorhub_user', JSON.stringify({
+    const userData = {
       email,
       name,
       avatar: avatar || '',
       loginTime: new Date().toISOString()
-    }));
+    };
+    localStorage.setItem('monitorhub_user', JSON.stringify(userData));
+
+    // Sync with MongoDB backend
+    try {
+      const response = await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, name, avatar }),
+      });
+
+      if (response.ok) {
+        toast.success('Successfully connected to database');
+      } else {
+        throw new Error('Server responded with error');
+      }
+    } catch (error) {
+      console.error('Failed to sync user with backend:', error);
+      toast.error('Local login successful, but failed to sync with database');
+    }
   };
+
 
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -91,7 +114,7 @@ export default function App() {
     setUserEmail('');
     setUserName('');
     setUserAvatar('');
-    
+
     // Clear localStorage
     localStorage.removeItem('monitorhub_user');
   };
@@ -130,16 +153,16 @@ export default function App() {
   return (
     <div className="h-screen flex overflow-hidden bg-slate-50 dark:bg-slate-950">
       <Toaster richColors position="top-right" />
-      
+
       {/* Sidebar */}
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top navbar */}
-        <Navbar 
-          onLogout={handleLogout} 
-          darkMode={darkMode} 
+        <Navbar
+          onLogout={handleLogout}
+          darkMode={darkMode}
           onToggleDarkMode={toggleDarkMode}
           userEmail={userEmail}
           userName={userName}

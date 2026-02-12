@@ -121,11 +121,10 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
                 {/* Theme preview cards */}
                 <div className="grid grid-cols-2 gap-4">
                   <motion.div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      !darkMode
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-                    }`}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${!darkMode
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                      }`}
                     onClick={() => !darkMode || onToggleDarkMode()}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -142,11 +141,10 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
                   </motion.div>
 
                   <motion.div
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      darkMode
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-                    }`}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${darkMode
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                      }`}
                     onClick={() => darkMode || onToggleDarkMode()}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -181,9 +179,8 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
                   ].map((accent) => (
                     <motion.button
                       key={accent.name}
-                      className={`w-12 h-12 rounded-lg ${accent.color} ${
-                        accentColor === accent.color ? `ring-2 ring-offset-2 ${accent.ringColor} dark:ring-offset-slate-900` : ''
-                      }`}
+                      className={`w-12 h-12 rounded-lg ${accent.color} ${accentColor === accent.color ? `ring-2 ring-offset-2 ${accent.ringColor} dark:ring-offset-slate-900` : ''
+                        }`}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                       title={accent.name.charAt(0).toUpperCase() + accent.name.slice(1)}
@@ -255,12 +252,12 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
                     <Label className="text-slate-900 dark:text-white">Collapsed Sidebar</Label>
                     <p className="text-sm text-slate-600 dark:text-slate-400">Show only icons in sidebar</p>
                   </div>
-                  <Switch 
-                    checked={sidebarCollapsed} 
+                  <Switch
+                    checked={sidebarCollapsed}
                     onCheckedChange={(checked) => {
                       setSidebarCollapsed(checked);
                       toast.info(checked ? 'Sidebar collapsed' : 'Sidebar expanded');
-                    }} 
+                    }}
                   />
                 </div>
               </div>
@@ -283,20 +280,20 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
 
             <div className="space-y-6">
               {[
-                { 
-                  label: 'Email Notifications', 
+                {
+                  label: 'Email Notifications',
                   desc: 'Receive alerts via email',
                   checked: emailNotifications,
                   onChange: setEmailNotifications
                 },
-                { 
-                  label: 'Push Notifications', 
+                {
+                  label: 'Push Notifications',
                   desc: 'Get browser push notifications',
                   checked: pushNotifications,
                   onChange: setPushNotifications
                 },
-                { 
-                  label: 'Critical Alerts Only', 
+                {
+                  label: 'Critical Alerts Only',
                   desc: 'Only notify for critical issues',
                   checked: criticalAlerts,
                   onChange: setCriticalAlerts
@@ -308,12 +305,12 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
                       <Label className="text-slate-900 dark:text-white">{setting.label}</Label>
                       <p className="text-sm text-slate-600 dark:text-slate-400">{setting.desc}</p>
                     </div>
-                    <Switch 
-                      checked={setting.checked} 
+                    <Switch
+                      checked={setting.checked}
                       onCheckedChange={(checked) => {
                         setting.onChange(checked);
                         toast.success(`${setting.label} ${checked ? 'enabled' : 'disabled'}`);
-                      }} 
+                      }}
                     />
                   </div>
                 </div>
@@ -342,12 +339,12 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
                     <Label className="text-slate-900 dark:text-white">Two-Factor Authentication</Label>
                     <p className="text-sm text-slate-600 dark:text-slate-400">Add an extra layer of security</p>
                   </div>
-                  <Switch 
-                    checked={twoFactorAuth} 
+                  <Switch
+                    checked={twoFactorAuth}
                     onCheckedChange={(checked) => {
                       setTwoFactorAuth(checked);
                       toast.success(`2FA ${checked ? 'enabled' : 'disabled'}`);
-                    }} 
+                    }}
                   />
                 </div>
               </div>
@@ -355,22 +352,22 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
               <Separator />
 
               <div className="space-y-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start"
                   onClick={() => toast.info('Password change feature coming soon')}
                 >
                   Change Password
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start"
                   onClick={() => toast.info('Session management feature coming soon')}
                 >
                   Manage Sessions
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start text-red-600"
                   onClick={() => {
                     if (confirm('Are you sure you want to revoke all sessions?')) {
@@ -504,7 +501,7 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
   return (
     <div className="p-6 space-y-6">
       <Breadcrumbs currentPage="settings" />
-      
+
       {/* Page header */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
@@ -531,11 +528,10 @@ export function SettingsPage({ darkMode, onToggleDarkMode, accentColor, onAccent
                       setActiveTab(item.id as SettingsTab);
                       toast.info(`Switched to ${item.label}`);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                      isActive
-                        ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
+                      ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
                     whileHover={{ x: isActive ? 0 : 4 }}
                     whileTap={{ scale: 0.98 }}
                   >

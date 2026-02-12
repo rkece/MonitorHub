@@ -28,8 +28,8 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       {/* Logo */}
       <div className="p-6 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-500/20 rounded-lg">
-            <Shield className="w-6 h-6 text-purple-400" />
+          <div className="p-2 bg-purple-500/20 rounded-xl">
+            <img src="/favicon.svg" alt="MonitorHub Logo" className="w-7 h-7" />
           </div>
           {!collapsed && (
             <motion.div
@@ -37,7 +37,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <h1 className="font-bold text-white">MonitorHub</h1>
+              <h1 className="font-bold text-white text-xl tracking-tight">MonitorHub<span className="text-purple-400">.</span></h1>
               <p className="text-xs text-slate-400">v2.4.1</p>
             </motion.div>
           )}
@@ -54,11 +54,10 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             <motion.button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                isActive
-                  ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/50'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
+                ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/50'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                }`}
               whileHover={{ scale: 1.02, x: 4 }}
               whileTap={{ scale: 0.98 }}
             >

@@ -58,7 +58,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     try {
       // Decode JWT token to get user info
       const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      
+
       onLogin(
         payload.email,
         payload.name,
@@ -171,11 +171,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
-                <Shield className="w-8 h-8 text-purple-300" />
+              <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+                <img src="/favicon.svg" alt="MonitorHub Logo" className="w-10 h-10" />
               </div>
               <div>
-                <h1 className="font-bold text-3xl">MonitorHub</h1>
+                <h1 className="font-bold text-3xl">MonitorHub<span className="text-purple-400">.</span></h1>
                 <p className="text-purple-200 text-sm">Enterprise Monitoring Platform</p>
               </div>
             </motion.div>
@@ -260,7 +260,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                       <Input
                         id="email"
                         type="email"
-                        placeholder="admin@monitorhub.com"
+                        placeholder="admin@monitub.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="pl-11 bg-white/10 border-white/20 text-white placeholder:text-purple-200/50 focus:border-purple-400 focus:ring-purple-400/20"

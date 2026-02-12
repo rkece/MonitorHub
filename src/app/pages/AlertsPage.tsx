@@ -1,8 +1,8 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
-import { 
-  AlertTriangle, CheckCircle, Info, XCircle, ChevronDown, ChevronUp, Filter, 
-  Plus, Check, X, Trash2, Clock, AlertCircle 
+import {
+  AlertTriangle, CheckCircle, Info, XCircle, ChevronDown, ChevronUp, Filter,
+  Plus, Check, X, Trash2, Clock, AlertCircle
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -27,8 +27,17 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+export type Alert = {
+  _id?: string;
+  title: string;
+  message: string;
+  severity: string;
+  deviceName?: string;
+  timestamp: string;
+  acknowledged: boolean;
+  resolvedAt?: string;
+};
 import { apiAlerts } from '../utils/apiAlerts';
-type Alert = any;
 import { toast } from 'sonner';
 
 export function AlertsPage() {
@@ -48,8 +57,8 @@ export function AlertsPage() {
   }, []);
 
   const loadAlerts = () => {
-  apiAlerts.getAlerts().then(setAlerts);
-};
+    apiAlerts.getAlerts().then(setAlerts);
+  };
 
 
   const handleAddAlert = () => {
@@ -59,10 +68,10 @@ export function AlertsPage() {
     }
 
     apiAlerts.addAlert({
-  ...formData,
-  timestamp: new Date().toISOString(),
-  acknowledged: false,
-}).then(loadAlerts);
+      ...formData,
+      timestamp: new Date().toISOString(),
+      acknowledged: false,
+    }).then(loadAlerts);
 
     setIsAddDialogOpen(false);
     setFormData({
@@ -74,20 +83,20 @@ export function AlertsPage() {
     toast.success('Alert created successfully');
   };
 
-  const handleAcknowledge = (alertId: string) => {
-    apiAlerts.acknowledgeAlert(alertId).then(loadAlerts);
+  const handleAcknowledge = (_id: string) => {
+    apiAlerts.acknowledgeAlert(_id).then(loadAlerts);
 
   };
 
-  const handleResolve = (alertId: string) => {
-  apiAlerts.resolveAlert(alertId).then(loadAlerts);
+  const handleResolve = (_id: string) => {
+    apiAlerts.resolveAlert(_id).then(loadAlerts);
 
   };
 
   const handleDelete = (alert: Alert) => {
     if (confirm(`Are you sure you want to delete this alert?`)) {
-      apiAlerts.deleteAlert(alert.id).then(loadAlerts);
-toast.success('Alert deleted');
+      apiAlerts.deleteAlert(alert._id!).then(loadAlerts);
+      toast.success('Alert deleted');
     }
   };
 
@@ -134,7 +143,7 @@ toast.success('Alert deleted');
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
-    
+
     if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
     if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
     if (minutes > 0) return `${minutes} min ago`;
@@ -144,11 +153,11 @@ toast.success('Alert deleted');
   const renderAlert = (alert: Alert) => {
     const config = getSeverityConfig(alert.severity);
     const Icon = config.icon;
-    const isExpanded = expandedAlert === alert.id;
+    const isExpanded = expandedAlert === alert._id;
 
     return (
       <motion.div
-        key={alert.id}
+        key={alert._id}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
@@ -160,7 +169,7 @@ toast.success('Alert deleted');
               <div className={`p-2 rounded-lg ${config.color}`}>
                 <Icon className="w-5 h-5" />
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-4 mb-2">
                   <div className="flex-1">
@@ -181,11 +190,11 @@ toast.success('Alert deleted');
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400">{alert.message}</p>
                   </div>
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setExpandedAlert(isExpanded ? null : alert.id)}
+                    onClick={() => setExpandedAlert(isExpanded ? null : alert._id!)}
                   >
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </Button>
@@ -215,7 +224,7 @@ toast.success('Alert deleted');
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
                         <p className="text-xs text-slate-500 dark:text-slate-400">Alert ID</p>
-                        <p className="text-sm font-mono text-slate-900 dark:text-white">{alert.id}</p>
+                        <p className="text-sm font-mono text-slate-900 dark:text-white">{alert._id}</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 dark:text-slate-400">Timestamp</p>
@@ -232,13 +241,13 @@ toast.success('Alert deleted');
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex gap-2">
                       {!alert.acknowledged && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleAcknowledge(alert.id)}
+                          onClick={() => handleAcknowledge(alert._id!)}
                           className="gap-2"
                         >
                           <Check className="w-4 h-4" />
@@ -249,7 +258,7 @@ toast.success('Alert deleted');
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleResolve(alert.id)}
+                          onClick={() => handleResolve(alert._id!)}
                           className="gap-2"
                         >
                           <CheckCircle className="w-4 h-4" />
@@ -279,7 +288,7 @@ toast.success('Alert deleted');
   return (
     <div className="p-6 space-y-6">
       <Breadcrumbs currentPage="alerts" />
-      
+
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
@@ -287,15 +296,15 @@ toast.success('Alert deleted');
           <p className="text-slate-600 dark:text-slate-400 mt-1">Monitor and manage system alerts by severity</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="gap-2"
             onClick={loadAlerts}
           >
             <Filter className="w-4 h-4" />
             Refresh
           </Button>
-          <Button 
+          <Button
             className="gap-2 bg-purple-500 hover:bg-purple-600"
             onClick={() => setIsAddDialogOpen(true)}
           >
@@ -448,8 +457,8 @@ toast.success('Alert deleted');
             </div>
             <div className="space-y-2">
               <Label htmlFor="severity">Severity</Label>
-              <Select 
-                value={formData.severity} 
+              <Select
+                value={formData.severity}
                 onValueChange={(value) => setFormData({ ...formData, severity: value as Alert['severity'] })}
               >
                 <SelectTrigger>

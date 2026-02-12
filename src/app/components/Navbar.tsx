@@ -87,9 +87,8 @@ export function Navbar({ onLogout, darkMode, onToggleDarkMode, userEmail, userNa
               {notifications.map((notification) => (
                 <motion.div
                   key={notification.id}
-                  className={`p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer ${
-                    notification.unread ? 'bg-purple-50 dark:bg-purple-900/10' : ''
-                  }`}
+                  className={`p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer ${notification.unread ? 'bg-purple-50 dark:bg-purple-900/10' : ''
+                    }`}
                   whileHover={{ x: 4 }}
                 >
                   <div className="flex items-start justify-between gap-2">

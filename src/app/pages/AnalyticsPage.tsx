@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+
 import { TrendingUp, TrendingDown, Activity, Shield } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -20,10 +22,29 @@ import { riskTrendData, zonePerformanceData, heatmapData } from '../utils/mockDa
 import { Breadcrumbs } from '../components/Breadcrumbs';
 
 export function AnalyticsPage() {
+  const [userCount, setUserCount] = useState<string>('...');
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/users');
+        if (response.ok) {
+          const users = await response.json();
+          setUserCount(users.length.toLocaleString());
+        } else {
+          setUserCount('1,247'); // Fallback to mock
+        }
+      } catch (error) {
+        setUserCount('1,247'); // Fallback to mock
+      }
+    };
+    fetchUsers();
+  }, []);
+
   return (
     <div className="p-6 space-y-6">
       <Breadcrumbs currentPage="analytics" />
-      
+
       {/* Page header */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Analytics & Reports</h1>
@@ -36,8 +57,9 @@ export function AnalyticsPage() {
           { label: 'Avg Response Time', value: '245ms', change: '-12%', trend: 'down', color: 'from-green-500 to-emerald-500' },
           { label: 'System Uptime', value: '99.7%', change: '+0.2%', trend: 'up', color: 'from-blue-500 to-cyan-500' },
           { label: 'Error Rate', value: '0.03%', change: '-45%', trend: 'down', color: 'from-purple-500 to-pink-500' },
-          { label: 'Active Users', value: '1,247', change: '+18%', trend: 'up', color: 'from-orange-500 to-amber-500' },
+          { label: 'Active Users', value: userCount, change: '+18%', trend: 'up', color: 'from-orange-500 to-amber-500' },
         ].map((kpi, index) => (
+
           <motion.div
             key={kpi.label}
             initial={{ opacity: 0, y: 20 }}
