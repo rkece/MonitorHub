@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
-import { TrendingUp, TrendingDown, Activity, Shield } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Shield, FileText, Download, Loader2, X } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { toast } from 'sonner';
 import {
   LineChart,
   Line,
@@ -23,6 +25,9 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 
 export function AnalyticsPage() {
   const [userCount, setUserCount] = useState<string>('...');
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isCompiling, setIsCompiling] = useState(false);
+  const [reportText, setReportText] = useState('');
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -41,14 +46,90 @@ export function AnalyticsPage() {
     fetchUsers();
   }, []);
 
+  const handleCompileReport = () => {
+    setIsCompiling(true);
+    setTimeout(() => {
+      const generatedReport = `==================================================
+MONITORHUB SUBSTANCE COMPLIANCE & SAFETY AUDIT
+Generated: ${new Date().toLocaleString()}
+Scope: Campus-wide Wellness & Active Zone Audits
+==================================================
+
+1. OVERALL PORTAL STATUS
+--------------------------------------------------
+- Active Zones: 5 Total
+- Safety Rating: 91% (COMPLIANT)
+- Active Critical Alerts: 2
+- Sensor Health: 99.7% Operational Uptime
+
+2. ACTIVE ZONE DETAILED METRICS
+--------------------------------------------------
+- Zone A Restrooms: online (92% safety rating, substance-sensor active)
+- Zone B Hostels: online (88% safety rating, residential vapors-sensor active)
+- Zone C Cafeteria: warning (79% safety rating, dip under threshold)
+- Zone D Sports Complex: offline (0% safety rating, connection failure)
+- Zone E Science Lab: online (95% safety rating, restricted hazmat sensors active)
+
+3. COMPLIANCE VIOLATIONS TIMELINE (PAST 24H)
+--------------------------------------------------
+* Incident 1: Vapor Spike Anomaly flagged at Zone C Cafeteria
+* Incident 2: Sensor Offline Flag at Zone D Sports Complex
+* Incident 3: Safe threshold deviation at Zone C Cafeteria (resolved)
+
+4. RECOMMENDED MITIGATION AUDIT ACTIONS
+--------------------------------------------------
+[ACTION REQUIRED] Schedule physical sensor inspection for Zone D Sports Complex immediately.
+[ACTION REQUIRED] Inspect ventilation system calibration at Zone C Cafeteria to address safety dip.
+[MONITOR] Recalibrate hazard vapor exhaust lines at Zone E Science Lab within 15 days.
+
+==================================================
+REPORT END • SECURED BY MONITORHUB PROTOCOLS
+==================================================`;
+      setReportText(generatedReport);
+      setIsCompiling(false);
+      setShowReportModal(true);
+      toast.success('Compliance audit report compiled successfully!');
+    }, 1500);
+  };
+
+  const downloadReport = () => {
+    const element = document.createElement("a");
+    const file = new Blob([reportText], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `MonitorHub_Compliance_Report_${new Date().toISOString().slice(0,10)}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast.success('Compliance audit report file downloaded successfully!');
+  };
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 relative">
       <Breadcrumbs currentPage="analytics" />
 
       {/* Page header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Analytics & Reports</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">Deep insights into system performance and trends</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Analytics & Reports</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Deep insights into system performance and trends</p>
+        </div>
+        <Button
+          onClick={handleCompileReport}
+          disabled={isCompiling}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-5 rounded-xl shadow-md gap-2"
+        >
+          {isCompiling ? (
+            <>
+              <Loader2 className="w-4.5 h-4.5 animate-spin" />
+              Compiling...
+            </>
+          ) : (
+            <>
+              <FileText className="w-4.5 h-4.5" />
+              Compile Compliance Report
+            </>
+          )}
+        </Button>
       </div>
 
       {/* KPI comparisons */}
@@ -329,6 +410,68 @@ export function AnalyticsPage() {
           </div>
         </Card>
       </motion.div>
+
+      {/* Compliance Report Generation Modal */}
+      <AnimatePresence>
+        {showReportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowReportModal(false)}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+            />
+            
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 overflow-hidden z-10 text-slate-800 dark:text-slate-100 flex flex-col max-h-[85vh]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 className="font-bold text-lg font-display flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-purple-500" />
+                  Compliance & Safety Audit Report Preview
+                </h3>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Report Content */}
+              <div className="flex-1 overflow-y-auto mb-6 bg-slate-950 dark:bg-black rounded-xl p-4 border border-slate-800 shadow-inner font-mono text-xs text-slate-300 leading-relaxed max-h-[50vh]">
+                <pre className="whitespace-pre-wrap">{reportText}</pre>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+                <Button
+                  onClick={() => setShowReportModal(false)}
+                  variant="outline"
+                  className="rounded-xl"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={downloadReport}
+                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export as Plain Text (.txt)
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
