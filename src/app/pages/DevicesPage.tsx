@@ -180,8 +180,8 @@ export function DevicesPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Device Monitoring</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">Monitor and manage all infrastructure devices</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white font-display">Monitoring Zones</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Monitor wellness and compliance parameters across zones</p>
         </div>
         <div className="flex items-center gap-3">
           <Button 
@@ -208,7 +208,7 @@ export function DevicesPage() {
             }}
           >
             <Plus className="w-4 h-4" />
-            Add Device
+            Add Zone
           </Button>
         </div>
       </div>
@@ -216,7 +216,7 @@ export function DevicesPage() {
       {/* Stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Devices', value: devices.length, color: 'from-blue-500 to-cyan-500' },
+          { label: 'Total Zones', value: devices.length, color: 'from-blue-500 to-cyan-500' },
           { label: 'Online', value: devices.filter((d) => d.status === 'online').length, color: 'from-green-500 to-emerald-500' },
           { label: 'Warning', value: devices.filter((d) => d.status === 'warning').length, color: 'from-orange-500 to-amber-500' },
           { label: 'Offline', value: devices.filter((d) => d.status === 'offline').length, color: 'from-red-500 to-rose-500' },
@@ -242,7 +242,7 @@ export function DevicesPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
-              placeholder="Search devices..."
+              placeholder="Search zones..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -282,13 +282,13 @@ export function DevicesPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12"></TableHead>
-              <TableHead>Device</TableHead>
-              <TableHead>Type</TableHead>
+              <TableHead>Zone Name</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Location</TableHead>
-              <TableHead>IP Address</TableHead>
-              <TableHead>CPU</TableHead>
-              <TableHead>Memory</TableHead>
+              <TableHead>Sensor IP</TableHead>
+              <TableHead>Activity Index</TableHead>
+              <TableHead>Compliance Level</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -412,7 +412,7 @@ export function DevicesPage() {
         {filteredDevices.length === 0 && (
           <div className="p-12 text-center">
             <Server className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-600 dark:text-slate-400">No devices found</p>
+            <p className="text-slate-600 dark:text-slate-400">No monitoring zones found</p>
           </div>
         )}
       </Card>

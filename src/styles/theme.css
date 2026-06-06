@@ -79,6 +79,8 @@
 }
 
 @theme inline {
+  --font-sans: 'Panacea', 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Syne', sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -125,7 +127,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 
   /**
@@ -138,24 +140,28 @@
   }
 
   h1 {
+    @apply font-display;
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h2 {
+    @apply font-display;
     font-size: var(--text-xl);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h3 {
+    @apply font-display;
     font-size: var(--text-lg);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h4 {
+    @apply font-display;
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;

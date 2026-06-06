@@ -37,7 +37,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <h1 className="font-bold text-white text-xl tracking-tight">MonitorHub<span className="text-purple-400">.</span></h1>
+              <h1 className="font-bold text-white text-xl tracking-tight">MonitorHub</h1>
               <p className="text-xs text-slate-400">v2.4.1</p>
             </motion.div>
           )}
