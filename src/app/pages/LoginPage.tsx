@@ -20,9 +20,11 @@ declare global {
   }
 }
 
-// Canvas component for interactive molecule/neuron particle network
-function MolecularCanvas() {
+// Canvas component for interactive 3D synapse sphere with electric/thunder energy
+function ThreeDSynapseSphere() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mouseRef = useRef({ x: 0, y: 0, px: 0, py: 0, targetX: 0, targetY: 0, isHovered: false });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,90 +33,297 @@ function MolecularCanvas() {
     if (!ctx) return;
 
     let animationFrameId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    let width = (canvas.width = 450);
+    let height = (canvas.height = 450);
 
-    const particles: Array<{
+    const updateSize = () => {
+      if (containerRef.current && canvas) {
+        width = canvas.width = containerRef.current.clientWidth;
+        height = canvas.height = containerRef.current.clientHeight;
+      }
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+
+    interface Node3D {
       x: number;
       y: number;
-      vx: number;
-      vy: number;
-      radius: number;
+      z: number;
+      projX: number;
+      projY: number;
+      projSize: number;
+      baseSize: number;
       color: string;
-    }> = [];
+      name?: string;
+      pulse: number;
+      rotatedZ: number;
+    }
 
-    const particleCount = 45;
-    const colors = ['rgba(168, 85, 247, 0.35)', 'rgba(236, 72, 153, 0.35)', 'rgba(59, 130, 246, 0.35)'];
+    const nodes: Node3D[] = [];
+    const nodeCount = 55;
+    const goldenRatio = (1 + Math.sqrt(5)) / 2;
+    const names = [
+      'D2 Receptor', '5-HT1A', 'Synapse Core', 'GABA-A', 'Dopamine Link',
+      'Wellness Node', 'Active Protection', 'Serotonin Ref', 'Receptor A1',
+      'Neural Shield', 'Cognitive Lock', 'Synaptic Guard'
+    ];
 
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.7,
-        vy: (Math.random() - 0.5) * 0.7,
-        radius: Math.random() * 3.5 + 2.5,
-        color: colors[Math.floor(Math.random() * colors.length)],
+    for (let i = 0; i < nodeCount; i++) {
+      const theta = 2 * Math.PI * i / goldenRatio;
+      const phi = Math.acos(1 - 2 * (i + 0.5) / nodeCount);
+      const radius = 135;
+
+      const x = radius * Math.cos(theta) * Math.sin(phi);
+      const y = radius * Math.sin(theta) * Math.sin(phi);
+      const z = radius * Math.cos(phi);
+
+      nodes.push({
+        x,
+        y,
+        z,
+        projX: 0,
+        projY: 0,
+        projSize: 0,
+        baseSize: Math.random() * 3.5 + 2.5,
+        color: i % 3 === 0 ? '#a855f7' : i % 3 === 1 ? '#3b82f6' : '#ec4899', // purple, blue, pink
+        name: i < names.length ? names[i] : undefined,
+        pulse: Math.random() * Math.PI,
+        rotatedZ: 0
       });
     }
 
-    let mouse = { x: -1000, y: -1000 };
+    interface Particle3D {
+      angle: number;
+      speed: number;
+      radius: number;
+      yOffset: number;
+      size: number;
+      color: string;
+    }
+    const orbitParticles: Particle3D[] = [];
+    for (let i = 0; i < 12; i++) {
+      orbitParticles.push({
+        angle: Math.random() * Math.PI * 2,
+        speed: (Math.random() * 0.012 + 0.006) * (Math.random() > 0.5 ? 1 : -1),
+        radius: 160 + Math.random() * 40,
+        yOffset: (Math.random() - 0.5) * 100,
+        size: Math.random() * 2 + 1,
+        color: Math.random() > 0.5 ? '#67e8f9' : '#c084fc'
+      });
+    }
 
-    const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
+    let angX = 0;
+    let angY = 0;
+    let targetVelX = 0.003;
+    let targetVelY = 0.005;
+    let velX = 0.003;
+    let velY = 0.005;
+    const focalLength = 300;
+
+    const drawLightning = (
+      ctx: CanvasRenderingContext2D,
+      x1: number, y1: number,
+      x2: number, y2: number,
+      displace: number
+    ) => {
+      let currX = x1;
+      let currY = y1;
+      const segments = 6;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      for (let i = 1; i < segments; i++) {
+        const t = i / segments;
+        const targetX = x1 + (x2 - x1) * t;
+        const targetY = y1 + (y2 - y1) * t;
+
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        const nx = -dy / (len || 1);
+        const ny = dx / (len || 1);
+
+        const factor = Math.sin(t * Math.PI);
+        const offset = (Math.random() - 0.5) * displace * factor;
+
+        currX = targetX + nx * offset;
+        currY = targetY + ny * offset;
+        ctx.lineTo(currX, currY);
+      }
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
     };
 
-    const handleResize = () => {
+    const handleMouseMove = (e: MouseEvent) => {
       if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      mouseRef.current.targetX = (e.clientX - cx) / (rect.width / 2);
+      mouseRef.current.targetY = (e.clientY - cy) / (rect.height / 2);
+      
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+      mouseRef.current.isHovered = Math.sqrt(dx * dx + dy * dy) < 220;
+    };
+
+    const handleMouseLeave = () => {
+      mouseRef.current.targetX = 0;
+      mouseRef.current.targetY = 0;
+      mouseRef.current.isHovered = false;
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('resize', handleResize);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
 
     const render = () => {
+      if (!canvas || !ctx) return;
       ctx.clearRect(0, 0, width, height);
 
-      // Draw particle connections (molecular/neuron synapse lines)
-      for (let i = 0; i < particleCount; i++) {
-        const p1 = particles[i];
-        p1.x += p1.vx;
-        p1.y += p1.vy;
+      const cx = width / 2;
+      const cy = height / 2;
 
-        if (p1.x < 0 || p1.x > width) p1.vx *= -1;
-        if (p1.y < 0 || p1.y > height) p1.vy *= -1;
+      const isHovered = mouseRef.current.isHovered;
+      if (isHovered) {
+        targetVelX = mouseRef.current.targetY * 0.025;
+        targetVelY = mouseRef.current.targetX * 0.025;
+      } else {
+        targetVelX = 0.003;
+        targetVelY = 0.005;
+      }
 
-        // Subtly attract to mouse
-        const dxMouse = mouse.x - p1.x;
-        const dyMouse = mouse.y - p1.y;
-        const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
-        if (distMouse < 220) {
-          p1.x += (dxMouse / distMouse) * 0.15;
-          p1.y += (dyMouse / distMouse) * 0.15;
-        }
+      velX += (targetVelX - velX) * 0.08;
+      velY += (targetVelY - velY) * 0.08;
 
-        ctx.beginPath();
-        ctx.arc(p1.x, p1.y, p1.radius, 0, Math.PI * 2);
-        ctx.fillStyle = p1.color;
-        ctx.fill();
+      angX += velX;
+      angY += velY;
 
-        for (let j = i + 1; j < particleCount; j++) {
-          const p2 = particles[j];
-          const dx = p1.x - p2.x;
-          const dy = p1.y - p2.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+      const cosX = Math.cos(angX);
+      const sinX = Math.sin(angX);
+      const cosY = Math.cos(angY);
+      const sinY = Math.sin(angY);
 
-          if (dist < 130) {
+      nodes.forEach(node => {
+        node.pulse += 0.03;
+
+        const x1 = node.x * cosY - node.z * sinY;
+        const z1 = node.x * sinY + node.z * cosY;
+
+        const y2 = node.y * cosX - z1 * sinX;
+        const z2 = node.y * sinX + z1 * cosX;
+
+        const scale = focalLength / (focalLength + z2);
+        node.projX = cx + x1 * scale;
+        node.projY = cy + y2 * scale;
+        node.projSize = Math.max(0.5, node.baseSize * scale * (1 + 0.15 * Math.sin(node.pulse)));
+        node.rotatedZ = z2;
+      });
+
+      const maxDistance = 140;
+      for (let i = 0; i < nodeCount; i++) {
+        const n1 = nodes[i];
+        for (let j = i + 1; j < nodeCount; j++) {
+          const n2 = nodes[j];
+
+          const dx = n1.x - n2.x;
+          const dy = n1.y - n2.y;
+          const dz = n1.z - n2.z;
+          const dist3d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          if (dist3d < maxDistance) {
+            const avgZ = (n1.rotatedZ + n2.rotatedZ) / 2;
+            const opacity = (1 - dist3d / maxDistance) * 0.15;
+            
             ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(168, 85, 247, ${0.12 * (1 - dist / 130)})`;
-            ctx.lineWidth = 0.75;
+            ctx.moveTo(n1.projX, n1.projY);
+            ctx.lineTo(n2.projX, n2.projY);
+
+            const grad = ctx.createLinearGradient(n1.projX, n1.projY, n2.projX, n2.projY);
+            grad.addColorStop(0, n1.color + Math.floor(opacity * 255).toString(16).padStart(2, '0'));
+            grad.addColorStop(1, n2.color + Math.floor(opacity * 255).toString(16).padStart(2, '0'));
+            
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 0.5 + 0.5 * (focalLength / (focalLength + avgZ));
             ctx.stroke();
           }
         }
       }
+
+      if (isHovered && Math.random() < 0.45) {
+        const originIdx = Math.floor(Math.random() * nodeCount);
+        const targetIdx = Math.floor(Math.random() * nodeCount);
+        
+        if (originIdx !== targetIdx) {
+          const n1 = nodes[originIdx];
+          const n2 = nodes[targetIdx];
+          
+          ctx.strokeStyle = Math.random() > 0.4 ? '#3b82f6' : '#a855f7';
+          ctx.lineWidth = Math.random() * 1.5 + 0.8;
+          ctx.shadowColor = '#00ffff';
+          ctx.shadowBlur = 10;
+          drawLightning(ctx, n1.projX, n1.projY, n2.projX, n2.projY, 12);
+          
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 0.4;
+          ctx.shadowBlur = 3;
+          drawLightning(ctx, n1.projX, n1.projY, n2.projX, n2.projY, 8);
+          
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      orbitParticles.forEach(p => {
+        p.angle += p.speed;
+        
+        const x = p.radius * Math.cos(p.angle);
+        const z = p.radius * Math.sin(p.angle);
+        const y = p.yOffset;
+
+        const x1 = x * cosY - z * sinY;
+        const z1 = x * sinY + z * cosY;
+        const y2 = y * cosX - z1 * sinX;
+        const z2 = y * sinX + z1 * cosX;
+
+        const scale = focalLength / (focalLength + z2);
+        const projX = cx + x1 * scale;
+        const projY = cy + y2 * scale;
+        const size = p.size * scale;
+
+        ctx.beginPath();
+        ctx.arc(projX, projY, size, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 5;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+
+      const sortedIndices = Array.from({ length: nodeCount }, (_, i) => i);
+      sortedIndices.sort((a, b) => nodes[b].rotatedZ - nodes[a].rotatedZ);
+
+      sortedIndices.forEach(idx => {
+        const node = nodes[idx];
+
+        ctx.beginPath();
+        ctx.arc(node.projX, node.projY, node.projSize * 2, 0, Math.PI * 2);
+        ctx.fillStyle = node.color + '22';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(node.projX, node.projY, node.projSize, 0, Math.PI * 2);
+        ctx.fillStyle = node.color;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(node.projX, node.projY, node.projSize * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+
+        if (isHovered && node.name && Math.random() < 0.25) {
+          ctx.font = '8px monospace';
+          ctx.fillStyle = 'rgba(255,255,255,0.7)';
+          ctx.fillText(node.name, node.projX + 8, node.projY + 3);
+        }
+      });
 
       animationFrameId = requestAnimationFrame(render);
     };
@@ -122,13 +331,20 @@ function MolecularCanvas() {
     render();
 
     return () => {
+      window.removeEventListener('resize', updateSize);
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', handleResize);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" />;
+  return (
+    <div ref={containerRef} className="w-full h-full min-h-[350px] md:min-h-[450px] flex items-center justify-center relative select-none">
+      <div className="absolute w-[320px] h-[320px] rounded-full border border-purple-500/10 animate-[spin_40s_linear_infinite] pointer-events-none" />
+      <div className="absolute w-[240px] h-[240px] rounded-full border border-blue-500/5 animate-[spin_25s_linear_infinite_reverse] pointer-events-none" />
+      <canvas ref={canvasRef} className="relative z-10 cursor-pointer drop-shadow-[0_0_25px_rgba(168,85,247,0.25)]" />
+    </div>
+  );
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -139,6 +355,21 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoaded, setGoogleLoaded] = useState(false);
+
+  const pageRef = useRef<HTMLDivElement>(null);
+  const tokenClientRef = useRef<any>(null);
+
+  // Set CSS variables for spotlight grid overlay in real time (high performance)
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (pageRef.current) {
+        pageRef.current.style.setProperty('--mouse-x', `${e.clientX}px`);
+        pageRef.current.style.setProperty('--mouse-y', `${e.clientY}px`);
+      }
+    };
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
+  }, []);
 
   // Load Google Sign-In script
   useEffect(() => {
@@ -156,45 +387,46 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     };
   }, []);
 
-  // Initialize and render Google Sign-In button when the login screen mounts
+  // Initialize official Google Identity Services Token Client Flow
   useEffect(() => {
-    if (currentScreen === 'login' && googleLoaded && window.google) {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCallback,
-      });
-
-      if (GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
-        setTimeout(() => {
-          const buttonElement = document.getElementById('google-signin-button');
-          if (buttonElement) {
-            window.google.accounts.id.renderButton(buttonElement, {
-              theme: 'outline',
-              size: 'large',
-              width: buttonElement.clientWidth || 380,
-              text: 'signin_with',
-              shape: 'rectangular',
-            });
-          }
-        }, 100);
+    if (googleLoaded && window.google && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
+      try {
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              setIsLoading(true);
+              try {
+                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                const payload = await res.json();
+                onLogin(payload.email, payload.name, payload.picture);
+              } catch (error) {
+                console.error('Error fetching Google user info:', error);
+              } finally {
+                setIsLoading(false);
+              }
+            }
+          },
+        });
+      } catch (err) {
+        console.error('Error initializing Google token client:', err);
       }
     }
-  }, [currentScreen, googleLoaded]);
-
-  const handleGoogleCallback = (response: any) => {
-    try {
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      onLogin(payload.email, payload.name, payload.picture);
-    } catch (error) {
-      console.error('Google sign-in error:', error);
-    }
-  };
+  }, [googleLoaded]);
 
   const handleGoogleSignIn = () => {
-    if (window.google && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
-      window.google.accounts.id.prompt();
+    if (tokenClientRef.current) {
+      tokenClientRef.current.requestAccessToken();
     } else {
-      alert('⚠️ Google Sign-In Not Configured\n\nTo use real Google Sign-In:\n\n1. Create OAuth credentials at:\nhttps://console.cloud.google.com/\n\n2. Copy .env.example to .env\n\n3. Add your Client ID to .env:\nVITE_GOOGLE_CLIENT_ID=your_id_here\n\n4. Restart the dev server\n\nSee QUICK_START.md for detailed instructions!\n\nFor now, use email/password login with any credentials.');
+      // Mock/simulated Google Login for preview and development
+      setIsLoading(true);
+      setTimeout(() => {
+        setIsLoading(false);
+        onLogin('demo.google@monitorhub.com', 'M. Rakesh Kumar', 'https://api.dicebear.com/7.x/adventurer/svg?seed=Rakesh');
+      }, 1000);
     }
   };
 
@@ -234,10 +466,23 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950 flex flex-col justify-between selection:bg-purple-500/30 selection:text-purple-200">
+    <div 
+      ref={pageRef}
+      className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950/40 flex flex-col justify-between selection:bg-purple-500/30 selection:text-purple-200"
+    >
+      {/* Grid background overlay with mouse spot glow */}
+      <div 
+        className="absolute inset-0 z-0 pointer-events-none opacity-40"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle 600px at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(168, 85, 247, 0.15), transparent 85%),
+            radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px)
+          `,
+          backgroundSize: '100% 100%, 28px 28px'
+        }}
+      />
       
-      {/* Background canvas and blur orbs */}
-      <MolecularCanvas />
+      {/* Background blur orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute -top-40 -left-40 w-96 h-96 bg-purple-500 rounded-full mix-blend-screen filter blur-3xl opacity-15"
@@ -253,7 +498,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
       {/* Floating particles */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(15)].map((_, i) => (
+        {[...Array(10)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 bg-white/40 rounded-full"
@@ -263,10 +508,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             }}
             animate={{
               y: [0, -25, 0],
-              opacity: [0.15, 0.4, 0.15],
+              opacity: [0.1, 0.3, 0.1],
             }}
             transition={{
-              duration: 4 + Math.random() * 3,
+              duration: 5 + Math.random() * 3,
               repeat: Infinity,
               delay: Math.random() * 2,
             }}
@@ -288,7 +533,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-1 flex items-center justify-center px-6 py-12 max-w-7xl mx-auto w-full">
+      <main className="relative z-10 flex-1 flex items-center justify-center px-6 py-8 max-w-7xl mx-auto w-full">
         <AnimatePresence mode="wait">
           {currentScreen === 'intro' ? (
             /* INTRO SCREEN - High-End Minimalist Landing */
@@ -298,69 +543,83 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
+              className="w-full flex flex-col gap-12"
             >
-              {/* Left Column: Hero & Narrative */}
-              <div className="lg:col-span-7 text-left space-y-8">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-medium tracking-wide">
-                  <Heart className="w-3.5 h-3.5 text-pink-400" />
-                  Building Healthy, Safe & Clean Communities
+              {/* Hero & 3D Centerpiece */}
+              <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                {/* Left Column: Hero & Narrative */}
+                <div className="lg:col-span-6 text-left space-y-8">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-medium tracking-wide">
+                    <Heart className="w-3.5 h-3.5 text-pink-400" />
+                    Building Healthy, Safe & Clean Communities
+                  </div>
+
+                  <h1 className="text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight leading-[1.1] font-display">
+                    Substance Prevention & <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">Wellness Monitor</span>
+                  </h1>
+
+                  <p className="text-lg lg:text-xl text-slate-300 font-light leading-relaxed max-w-2xl">
+                    An advanced, secure monitoring framework designed for institutions to foster drug-free environments. Track compliance scores, coordinate real-time anonymous alerts, and trace wellness analytics seamlessly.
+                  </p>
+
+                  <div className="flex flex-wrap gap-4 pt-2">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        onClick={() => setCurrentScreen('login')}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium px-8 py-6 rounded-xl shadow-lg shadow-purple-500/25 border-0 text-base"
+                      >
+                        Access Prevention Portal
+                      </Button>
+                    </motion.div>
+                  </div>
                 </div>
 
-                <h1 className="text-5xl lg:text-7xl font-bold text-white tracking-tight leading-[1.1] font-display">
-                  Substance Prevention & <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">Wellness Monitor</span>
-                </h1>
+                {/* Right Column: 3D Centerpiece with Telemetry Overlay */}
+                <div className="lg:col-span-6 flex flex-col items-center justify-center relative bg-white/[0.01] border border-white/5 rounded-3xl p-6 backdrop-blur-sm group hover:border-purple-500/25 hover:shadow-[0_0_35px_rgba(168,85,247,0.1)] transition-all duration-500">
+                  {/* Glowing telemetry elements */}
+                  <div className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-purple-500/30 text-[10px] text-purple-300 font-mono flex items-center gap-1.5 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    NEURAL METRICS: MONITORING
+                  </div>
+                  
+                  <div className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-blue-500/30 text-[10px] text-blue-300 font-mono flex items-center gap-1.5 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+                    SHIELD COMPLIANCE: 99.8%
+                  </div>
 
-                <p className="text-lg lg:text-xl text-slate-300 font-light leading-relaxed max-w-2xl">
-                  An advanced, secure monitoring framework designed for institutions to foster drug-free environments. Track compliance scores, coordinate real-time anonymous alerts, and trace wellness analytics seamlessly.
-                </p>
-
-                <div className="flex flex-wrap gap-4 pt-2">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      onClick={() => setCurrentScreen('login')}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium px-8 py-6 rounded-xl shadow-lg shadow-purple-500/20 border-0 text-base"
-                    >
-                      Access Prevention Portal
-                    </Button>
-                  </motion.div>
+                  <ThreeDSynapseSphere />
                 </div>
               </div>
 
-              {/* Right Column: Key Interactive Cards (follow.art style) */}
-              <div className="lg:col-span-5 space-y-4">
+              {/* Showcase Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-4">
                 {[
                   {
                     icon: Brain,
                     title: 'Interactive Wellness Grid',
                     desc: 'Track collective chemical compliance indices and mental wellness health signals in real-time.',
-                    color: 'from-purple-500/20 to-indigo-500/20',
                     iconColor: 'text-purple-400',
                   },
                   {
                     icon: Shield,
                     title: 'Secure Anonymous Reporting',
                     desc: 'Encrypted channels for reporting suspicious activities, protected with end-to-end security layers.',
-                    color: 'from-pink-500/20 to-purple-500/20',
                     iconColor: 'text-pink-400',
                   },
                   {
                     icon: Activity,
                     title: 'Substance Risk Scoring',
                     desc: 'Advanced threat profiling and risk-scoring metrics mapped by zone for proactive counseling.',
-                    color: 'from-blue-500/20 to-purple-500/20',
                     iconColor: 'text-blue-400',
                   },
                 ].map((item, index) => (
                   <motion.div
                     key={item.title}
                     className="group relative p-6 bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all duration-300 overflow-hidden cursor-default"
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 * index + 0.3, duration: 0.5 }}
                     whileHover={{ y: -4, backgroundColor: 'rgba(255,255,255,0.06)' }}
                   >
-                    {/* Glowing background gradient on hover */}
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 via-purple-500/0 to-purple-500/0 group-hover:from-purple-500/5 group-hover:to-pink-500/5 transition-all duration-500 pointer-events-none" />
                     
                     <div className="flex items-start gap-5 relative z-10">
@@ -395,7 +654,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 Back to overview
               </button>
 
-              <div className="bg-white/[0.04] backdrop-blur-2xl rounded-3xl border border-white/15 shadow-2xl overflow-hidden">
+              <div className="bg-white/[0.04] backdrop-blur-2xl rounded-3xl border border-white/15 shadow-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-300">
                 <div className="p-8">
                   <div className="text-center mb-8">
                     <div className="inline-block p-3.5 bg-purple-500/15 rounded-2xl mb-4 border border-purple-500/10">
@@ -486,42 +745,35 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     <Separator className="flex-1 bg-white/10" />
                   </div>
 
-                  {/* Google OAuth Button Container */}
-                  {googleLoaded && window.google && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID' ? (
-                    <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
-                      <div id="google-signin-button" className="w-full flex justify-center"></div>
-                      <span className="text-[10px] text-slate-500 mt-2">Secured by Google Identity Services</span>
-                    </div>
-                  ) : (
-                    <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                      <Button
-                        type="button"
-                        onClick={handleGoogleSignIn}
-                        disabled={isLoading}
-                        className="w-full bg-white hover:bg-slate-50 text-slate-900 border-0 shadow-md h-11 rounded-xl font-medium"
-                      >
-                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
-                          <path
-                            fill="#4285F4"
-                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                          />
-                          <path
-                            fill="#34A853"
-                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                          />
-                          <path
-                            fill="#FBBC05"
-                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                          />
-                          <path
-                            fill="#EA4335"
-                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                          />
-                        </svg>
-                        Sign in with Google
-                      </Button>
-                    </motion.div>
-                  )}
+                  {/* Google OAuth Button Container (Token Client Flow, Always Visible) */}
+                  <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="w-full">
+                    <Button
+                      type="button"
+                      onClick={handleGoogleSignIn}
+                      disabled={isLoading}
+                      className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-purple-500/30 shadow-lg shadow-purple-500/5 h-11 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-3"
+                    >
+                      <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+                        <path
+                          fill="#4285F4"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        />
+                      </svg>
+                      Sign in with Google
+                    </Button>
+                  </motion.div>
 
                   <div className="mt-6 text-center">
                     <p className="text-xs text-slate-400">
