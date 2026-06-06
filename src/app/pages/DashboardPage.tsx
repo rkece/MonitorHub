@@ -56,7 +56,7 @@ export function DashboardPage() {
       textColor: 'text-red-600 dark:text-red-400',
     },
     {
-      title: 'Active Nodes',
+      title: 'Active Zones',
       value: activeNodes,
       change: `${devices.length} total`,
       trend: activeNodes > devices.length / 2 ? 'up' : 'down',
@@ -178,9 +178,9 @@ export function DashboardPage() {
                   }}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="events" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="alerts" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="nodes" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="events" name="Total Incidents" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="alerts" name="Active Alerts" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="nodes" name="Compliance Index" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </Card>
@@ -193,7 +193,7 @@ export function DashboardPage() {
           transition={{ delay: 0.5 }}
         >
           <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-6">Device Status</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-6 font-display">Zone Compliance Status</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -213,15 +213,18 @@ export function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className="mt-4 space-y-2">
-              {deviceStatusData.map((status) => (
-                <div key={status.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }} />
-                    <span className="text-sm text-slate-600 dark:text-slate-400">{status.name}</span>
+              {deviceStatusData.map((status) => {
+                const displayName = status.name === 'Online' ? 'Compliant' : status.name === 'Warning' ? 'Needs Inspection' : status.name === 'Offline' ? 'High Risk' : status.name;
+                return (
+                  <div key={status.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }} />
+                      <span className="text-sm text-slate-600 dark:text-slate-400">{displayName}</span>
+                    </div>
+                    <span className="font-semibold text-slate-900 dark:text-white">{status.value}</span>
                   </div>
-                  <span className="font-semibold text-slate-900 dark:text-white">{status.value}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
         </motion.div>
@@ -279,13 +282,13 @@ export function DashboardPage() {
           transition={{ delay: 0.7 }}
         >
           <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-6">System Health Metrics</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-6 font-display">Substance Compliance Overview</h3>
             <div className="space-y-6">
               {[
-                { label: 'CPU Usage', value: 67, color: 'bg-blue-500' },
-                { label: 'Memory Usage', value: 78, color: 'bg-purple-500' },
-                { label: 'Network I/O', value: 45, color: 'bg-green-500' },
-                { label: 'Disk Usage', value: 56, color: 'bg-orange-500' },
+                { label: 'Overall Compliance Index', value: 88, color: 'bg-green-500' },
+                { label: 'Alert Acknowledged Rate', value: 94, color: 'bg-purple-500' },
+                { label: 'Sensor Calibration Status', value: 85, color: 'bg-blue-500' },
+                { label: 'Database Sync Integrity', value: 100, color: 'bg-emerald-500' },
               ].map((metric, index) => (
                 <motion.div
                   key={metric.label}

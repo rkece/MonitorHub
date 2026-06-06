@@ -185,3 +185,13 @@
     line-height: 1.5;
   }
 }
+
+/* Global Font Overrides */
+html, body, button, input, select, textarea, span, p, div, table, tr, td, th {
+  font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: 'Syne', 'Outfit', sans-serif !important;
+}
+

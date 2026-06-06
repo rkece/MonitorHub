@@ -198,13 +198,37 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     }
   };
 
+  const cleanNameFromEmail = (email: string): string => {
+    const prefix = email.split('@')[0];
+    let cleaned = prefix.replace(/\d+/g, '');
+    
+    if (cleaned.toLowerCase().startsWith('mm')) {
+      cleaned = 'M. ' + cleaned.slice(2);
+    }
+    
+    return cleaned
+      .split(/[._-]/)
+      .map(word => {
+        const spaced = word.replace(/([a-z])([A-Z])/g, '$1 $2');
+        return spaced
+          .split(' ')
+          .map(w => {
+            if (w.toLowerCase() === 'rakeshkumar') {
+              return 'Rakesh Kumar';
+            }
+            return w.charAt(0).toUpperCase() + w.slice(1);
+          })
+          .join(' ');
+      })
+      .join(' ');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      const namePart = email.split('@')[0];
-      const name = namePart.charAt(0).toUpperCase() + namePart.slice(1).replace(/[._-]/g, ' ');
+      const name = cleanNameFromEmail(email);
       onLogin(email, name);
     }, 1200);
   };
@@ -463,16 +487,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   </div>
 
                   {/* Google OAuth Button Container */}
-                  {GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID' ? (
-                    <div className="flex justify-center w-full min-h-[44px]">
+                  {googleLoaded && window.google && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID' ? (
+                    <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
                       <div id="google-signin-button" className="w-full flex justify-center"></div>
+                      <span className="text-[10px] text-slate-500 mt-2">Secured by Google Identity Services</span>
                     </div>
                   ) : (
                     <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
                       <Button
                         type="button"
                         onClick={handleGoogleSignIn}
-                        disabled={isLoading || !googleLoaded}
+                        disabled={isLoading}
                         className="w-full bg-white hover:bg-slate-50 text-slate-900 border-0 shadow-md h-11 rounded-xl font-medium"
                       >
                         <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
